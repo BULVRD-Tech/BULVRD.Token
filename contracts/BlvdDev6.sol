@@ -2,7 +2,9 @@ pragma solidity 0.4.25;
 
 
 contract BlvdDev6{
-    
+    //Development contract of utility functions within the BULVRD ecosystem
+    //https://bulvrdapp.com
+
     //The oracle checks the authenticity of the rewards
     address public oracle;
     
@@ -87,7 +89,19 @@ contract BlvdDev6{
     //Worker method for visiblity of rewards based on community contribution
     function pointsByContribution(string contribution) public returns (uint reward){
         uint value = 0;
-        if (keccak256(contribution) == keccak256("AR Drive")){
+        if (keccak256(contribution) == keccak256("Referral")){
+            //For referral for a new user to the ecosystem
+            value = 100;
+            return value; 
+        }else if (keccak256(contribution) == keccak256("Twitter Share")){
+            //For every confirmed share of a new report to Twitter
+            value = 10;
+            return value; 
+        }else if (keccak256(contribution) == keccak256("Mastodon Share")){
+            //For every confirmed share of a new report to Mastodon
+            value = 10;
+            return value; 
+        }else if (keccak256(contribution) == keccak256("AR Drive")){
             //For every 3300 meters driven in AR mode
             value = 7;
             return value; 
