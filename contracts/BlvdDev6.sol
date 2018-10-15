@@ -88,6 +88,7 @@ contract BlvdDev6{
     
     //Worker method for visiblity of rewards based on community contribution
     function pointsByContribution(string contribution) public returns (uint reward){
+        //(value / 5) = 1 BLVD Token
         uint value = 0;
         if (keccak256(contribution) == keccak256("Referral")){
             //For referral for a new user to the ecosystem
@@ -181,27 +182,30 @@ contract BlvdDev6{
     
     //Allow address to redeem rewards verified from BULVRD
     function redeemPoints(uint rewards, address destination, uint sigExp) public {
+        //rewards to token conversion
+        uint256 reward = (rewards / 5);
+        
         //Must be owner 
         require(msg.sender == owner);
         
         //The signature must not be expired
         require(block.timestamp < sigExp);
-        
+
         //The amount of rewards needs to be more than the previous redeemed amount
-        require(rewards > redeemedRewards[destination]);
+        require(reward > redeemedRewards[destination]);
 
         //check if reward amount can be redeemed against supply
-        uint256 total = totalMinted + rewards;
+        uint256 total = totalMinted + reward;
         require(total < maxMintable);
 
         //The new rewards that is available to be redeemed
-        uint newUserRewards = rewards - redeemedRewards[destination];
+        uint newUserRewards = reward - redeemedRewards[destination];
         //The user's rewards balance is updated with the new rewards
         balanceOf[destination] = safeAdd(balanceOf[destination], newUserRewards);
         //The total supply (ERC20) is updated
         totalSupply = safeAdd(totalSupply, newUserRewards);
         //The amount of rewards redeemed by a user is updated
-        redeemedRewards[destination] = rewards;
+        redeemedRewards[destination] = reward;
         //Add newly created tokens to totalMinted count
         totalMinted += newUserRewards;
         //The Redeem event is triggered
