@@ -28,6 +28,7 @@ contract BLVD7{
     string public constant name = "BlvdDev7";
     uint8 public constant decimals = 18;
     uint public totalSupply = 0;
+    uint public limiter = 5;
     event Transfer(address indexed _from, address indexed _to, uint _value);
     event Approval(address indexed _owner, address indexed _spender, uint _value);
 
@@ -88,56 +89,56 @@ contract BLVD7{
     //END OF ERC20 code
     
     //Worker method for visiblity of rewards based on community contribution
-    function pointsByContribution(string contribution) public returns (uint reward) {
+    function rewardByContribution(string contribution) public returns (uint reward) {
         //(value / 5) = 1 BLVD Token
         uint value = 0;
         if (keccak256(contribution) == keccak256("Referral")){
             //For referral for a new user to the ecosystem
-            value = 100;
+            value = 35;
             return value; 
         }else if (keccak256(contribution) == keccak256("Twitter Share")){
             //For every confirmed share of a new report to Twitter
-            value = 10;
+            value = 5;
             return value; 
         }else if (keccak256(contribution) == keccak256("Mastodon Share")){
             //For every confirmed share of a new report to Mastodon
-            value = 10;
+            value = 5;
             return value; 
         }else if (keccak256(contribution) == keccak256("AR Drive")){
             //For every 3300 meters driven in AR mode
-            value = 7;
+            value = 15;
             return value; 
         }else if (keccak256(contribution) == keccak256("Map Drive")){
             //For every 3300 meters driven in Map mode
-            value = 5;
+            value = 10;
             return value; 
         }else if (keccak256(contribution) == keccak256("Dash Drive")){
             //For every 3300 meters driven in Dash mode
-            value = 5;
+            value = 10;
             return value; 
         }else if (keccak256(contribution) == keccak256("Police")){
             //For every community validated police report
-            value = 5;
+            value = 10;
             return value; 
         }else if (keccak256(contribution) == keccak256("Closure")){
             //For every community validated road closure report
-            value = 5;
+            value = 15;
             return value; 
         }else if (keccak256(contribution) == keccak256("Hazard")){
             //For every community validated road hazard report
-            value = 4;
+            value = 10;
             return value; 
         }else if (keccak256(contribution) == keccak256("Traffic")){
             //For every community validated road traffic report
-            value = 3;
+            value = 5;
             return value; 
         }else if (keccak256(contribution) == keccak256("Accident")){
             //For every community validated accident report
-            value = 3;
+            value = 10;
             return value; 
         }else{
             //All other report types in app
-            value = 2;
+            value = 5;
             return value; 
         }
         return value;
@@ -188,9 +189,9 @@ contract BLVD7{
     }
     
     //Allow address to redeem rewards verified from BULVRD
-    function redeemPoints(uint rewards, address destination) public {
+    function redeemRewards(uint rewards, address destination) public {
          //rewards to token conversion
-        uint256 reward = (rewards / 5);
+        uint256 reward = (rewards / limiter);
         
         //Must be owner 
         require(msg.sender == owner);
