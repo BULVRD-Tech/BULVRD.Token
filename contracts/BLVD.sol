@@ -46,12 +46,13 @@ contract BLVD{
     uint public traffic = 5;
     uint public accident = 10;
     uint public base_report = 5;
+    uint public speed_sign = 1;
 
     event Transfer(address indexed _from, address indexed _to, uint _value);
     event Approval(address indexed _owner, address indexed _spender, uint _value);
 
     //The Redeem event is activated when a BULVRD user redeems rewards
-    event RedeemPoints(address indexed addr, uint rewards);
+    event RedeemRewards(address indexed addr, uint rewards);
     //END OF ERC20 code
  
     //Keep track of BULVRD users and their redeemed rewards
@@ -64,6 +65,7 @@ contract BLVD{
         maintainer = msg.sender;
         oracle = msg.sender;
         maxMintable = 5000000000 * 10**uint(decimals);
+        //TODO send initial token mint to deployer of token contract
     }
     
     //ERC20 code
@@ -143,6 +145,9 @@ contract BLVD{
         }else if (keccak256(contribution) == keccak256("Accident")){
             //For every community validated accident report
             return accident; 
+        }else if (keccak256(contribution) == keccak256("Speed Sign")){
+            //For every community validated speed sign
+            return speed_sign; 
         }else{
             //All other report types in app
             return base_report; 
@@ -203,7 +208,9 @@ contract BLVD{
         require(msg.sender == owner);
         
         //The signature must not be expired
-        // require(block.timestamp < sigExp);
+        //TODO find beeter means of preventing transaction replay?
+        //might not be needed if we are storing last block
+        require(block.timestamp <= sigExp);
 
         //The amount of rewards needs to be more than the previous redeemed amount
         require(reward > redeemedRewards[destination]);
@@ -229,7 +236,7 @@ contract BLVD{
         //Add newly created tokens to rewardsMinted count
         rewardsMinted = safeAdd(rewardsMinted, newUserRewards);
         //The Redeem event is triggered
-        emit RedeemPoints(destination, newUserRewards);
+        emit RedeemRewards(destination, newUserRewards);
         //Update token holder balance on chain explorers
         emit Transfer(oracle, destination, newUserRewards);
     }
@@ -256,4 +263,48 @@ contract BLVD{
         tokenContract.transfer(destination, amount);
     }
  
+    //Helper functions to allow for updating of contrbition payouts by type
+    function updateContributionReward(string contribution, uint amount) public onlyBy(maintainer){
+       //(value / 5) = 1 BLVD Token
+        if (keccak256(contribution) == keccak256("Referral")){
+            //For referral for a new user to the ecosystem
+            referral = amount; 
+        }else if (keccak256(contribution) == keccak256("Twitter Share")){
+            //For every confirmed share of a new report to Twitter
+            twitter_share = amount; 
+        }else if (keccak256(contribution) == keccak256("Mastodon Share")){
+            //For every confirmed share of a new report to Mastodon
+            mastodon_share = amount; 
+        }else if (keccak256(contribution) == keccak256("AR Drive")){
+            //For every 3300 meters driven in AR mode
+            ar_drive = amount; 
+        }else if (keccak256(contribution) == keccak256("Map Drive")){
+            //For every 3300 meters driven in Map mode
+            map_drive = amount; 
+        }else if (keccak256(contribution) == keccak256("Dash Drive")){
+            //For every 3300 meters driven in Dash mode
+            dash_drive = amount; 
+        }else if (keccak256(contribution) == keccak256("Police")){
+            //For every community validated police report
+            police = amount; 
+        }else if (keccak256(contribution) == keccak256("Closure")){
+            //For every community validated road closure report
+            closure = amount; 
+        }else if (keccak256(contribution) == keccak256("Hazard")){
+            //For every community validated road hazard report
+            hazard = amount; 
+        }else if (keccak256(contribution) == keccak256("Traffic")){
+            //For every community validated road traffic report
+            traffic = amount; 
+        }else if (keccak256(contribution) == keccak256("Accident")){
+            //For every community validated accident report
+            accident = amount; 
+        }else if (keccak256(contribution) == keccak256("Speed Sign")){
+            //For every community validated speed sign
+            return speed_sign; 
+        }else{
+            //All other report types in app
+            base_report = amount; 
+        }
+    }
 }
