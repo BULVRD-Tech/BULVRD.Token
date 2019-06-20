@@ -1,7 +1,74 @@
-pragma solidity 0.4.24;
+pragma solidity ^0.5.0;
 
+interface IERC20 {
+  function totalSupply() external view returns (uint256);
+  function balanceOf(address who) external view returns (uint256);
+  function allowance(address owner, address spender) external view returns (uint256);
+  function transfer(address to, uint256 value) external returns (bool);
+  function approve(address spender, uint256 value) external returns (bool);
+  function transferFrom(address from, address to, uint256 value) external returns (bool);
 
-contract BLVD{
+  event Transfer(address indexed from, address indexed to, uint256 value);
+  event Approval(address indexed owner, address indexed spender, uint256 value);
+}
+
+library SafeMath {
+  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    if (a == 0) {
+      return 0;
+    }
+    uint256 c = a * b;
+    assert(c / a == b);
+    return c;
+  }
+
+  function div(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a / b;
+    return c;
+  }
+
+  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+    assert(b <= a);
+    return a - b;
+  }
+
+  function add(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a + b;
+    assert(c >= a);
+    return c;
+  }
+  
+}
+
+contract ERC20Detailed is IERC20 {
+
+  uint8 private _Tokendecimals;
+  string private _Tokenname;
+  string private _Tokensymbol;
+
+  constructor(string memory name, string memory symbol, uint8 decimals) public {
+   
+   _Tokendecimals = decimals;
+    _Tokenname = name;
+    _Tokensymbol = symbol;
+    
+  }
+
+  function name() public view returns(string memory) {
+    return _Tokenname;
+  }
+
+  function symbol() public view returns(string memory) {
+    return _Tokensymbol;
+  }
+
+  function decimals() public view returns(uint8) {
+    return _Tokendecimals;
+  }
+ 
+}
+
+contract BLVD is ERC20Detailed {
     //Development contract of utility functions within the BULVRD ecosystem
     //https://bulvrdapp.com
 
@@ -19,150 +86,107 @@ contract BLVD{
 
     //Track total of tokens minted
     uint256 public totalMinted;
-
-    //Track total of tokens minted
-    uint256 public rewardsMinted;
     
-    //ERC20 code
-    //See https://github.com/ethereum/EIPs/blob/e451b058521ba6ccd5d3205456f755b1d2d52bb8/EIPS/eip-20.md
-    mapping(address => uint) public balanceOf;
-    mapping(address => mapping (address => uint)) public allowance;
-    string public constant symbol = "BLVD";
-    string public constant name = "BULVRD";
-    uint8 public constant decimals = 18;
-    uint public totalSupply = 0;
-    uint public limiter = 5;
-
-    //Constant values for rewards
-    uint public referral = 35;
-    uint public twitter_share = 5;
-    uint public mastodon_share = 5;
-    uint public ar_drive = 15;
-    uint public map_drive = 10;
-    uint public dash_drive = 10;
-    uint public police = 10;
-    uint public closure = 15;
-    uint public hazard = 10;
-    uint public traffic = 5;
-    uint public accident = 10;
-    uint public base_report = 5;
-    uint public speed_sign = 1;
-
-    event Transfer(address indexed _from, address indexed _to, uint _value);
-    event Approval(address indexed _owner, address indexed _spender, uint _value);
-
+    using SafeMath for uint256;
+    mapping(address => uint256) private _balanceOf;
+    mapping(address => mapping (address => uint256)) private _allowed;
+    
+    string public constant tokenSymbol = "BLVD";
+    string public constant tokenName = "BULVRD";
+    uint8 public constant tokenDecimals = 18;
+    uint256 public _totalSupply = 0;
+    uint256 public limiter = 5;
+    
+    event Transfer(address indexed _from, address indexed _to, uint256 _value);
+    event Approval(address indexed _owner, address indexed _spender, uint256 _value);
     //The Redeem event is activated when a BULVRD user redeems rewards
-    event RedeemRewards(address indexed addr, uint rewards);
-    //END OF ERC20 code
+    event RedeemRewards(address indexed addr, uint256 rewards);
+    
+    //Constant values for rewards
+    uint256 public referral = 35;
+    uint256 public ar_drive = 15;
+    uint256 public closure = 15;
+    uint256 public map_drive = 10;
+    uint256 public dash_drive = 10;
+    uint256 public police = 10;
+    uint256 public hazard = 10;
+    uint256 public accident = 10;
+    uint256 public traffic = 5;
+    uint256 public twitter_share = 5;
+    uint256 public mastodon_share = 5;
+    uint256 public base_report = 5;
+    uint256 public speed_sign = 1;
  
     //Keep track of BULVRD users and their redeemed rewards
-    mapping(address => uint) redeemedRewards;
-    mapping(address => uint) latestWithdrawBlock;
+    mapping(address => uint256) redeemedRewards;
+    mapping(address => uint256) latestWithdrawBlock;
     
-    //Construct the contract
-    constructor() public {
+    constructor() public ERC20Detailed(tokenName, tokenSymbol, tokenDecimals) {
         owner = msg.sender;
         maintainer = msg.sender;
         oracle = msg.sender;
-        maxMintable = 5000000000 * 10**uint(decimals);
-        //TODO send initial token mint to deployer of token contract
+        maxMintable = 50000000000 * 10**uint256(tokenDecimals);
+        //initial grant
+        redeemRewards(105000000000 * 10**uint256(tokenDecimals), owner);
     }
     
-    //ERC20 code
-    //See https://github.com/ethereum/EIPs/blob/e451b058521ba6ccd5d3205456f755b1d2d52bb8/EIPS/eip-20.md
-    function transfer(address destination, uint amount) public returns (bool success) {
-        if (balanceOf[msg.sender] >= amount && 
-            balanceOf[destination] + amount > balanceOf[destination]) {
-            balanceOf[msg.sender] -= amount;
-            balanceOf[destination] += amount;
-            emit Transfer(msg.sender, destination, amount);
-            return true;
-        } else {
-            return false;
+    function transferAnyERC20Token(address tokenAddress, uint tokens) public onlyBy(owner) returns (bool success) {
+        return IERC20(tokenAddress).transfer(owner, tokens);
+    }
+    
+    function totalSupply() public view returns (uint256) {
+        return _totalSupply;
+    }
+
+    function balanceOf(address _owner) public view returns (uint256) {
+        return _balanceOf[_owner];
+    }
+
+    function allowance(address _owner, address spender) public view returns (uint256) {
+        return _allowed[_owner][spender];
+    }
+
+    function multiTransfer(address[] memory receivers, uint256[] memory amounts) public {
+        for (uint256 i = 0; i < receivers.length; i++) {
+            transfer(receivers[i], amounts[i]);
         }
     }
- 
-    function transferFrom (
-        address from,
-        address to,
-        uint amount
-    ) public returns (bool success) {
-        if (balanceOf[from] >= amount &&
-            allowance[from][msg.sender] >= amount &&
-            balanceOf[to] + amount > balanceOf[to]) 
-        {
-            balanceOf[from] -= amount;
-            allowance[from][msg.sender] -= amount;
-            balanceOf[to] += amount;
-            emit Transfer(from, to, amount);
-            return true;
-        } else {
-            return false;
-        }
-    }
- 
-    function approve(address spender, uint amount) public returns (bool success) {
-        allowance[msg.sender][spender] = amount;
-        emit Approval(msg.sender, spender, amount);
+  
+    function increaseAllowance(address spender, uint256 addedValue) public returns (bool) {
+        require(spender != address(0));
+        _allowed[msg.sender][spender] = (_allowed[msg.sender][spender].add(addedValue));
+        emit Approval(msg.sender, spender, _allowed[msg.sender][spender]);
         return true;
     }
-    //END OF ERC20 code
-    
-    //Worker method for visiblity of rewards based on community contribution
-    function rewardByContribution(string contribution) public returns (uint reward) {
-        //(value / 5) = 1 BLVD Token
-        uint value = 0;
-        if (keccak256(contribution) == keccak256("Referral")){
-            //For referral for a new user to the ecosystem
-            return referral; 
-        }else if (keccak256(contribution) == keccak256("Twitter Share")){
-            //For every confirmed share of a new report to Twitter
-            return twitter_share; 
-        }else if (keccak256(contribution) == keccak256("Mastodon Share")){
-            //For every confirmed share of a new report to Mastodon
-            return mastodon_share; 
-        }else if (keccak256(contribution) == keccak256("AR Drive")){
-            //For every 3300 meters driven in AR mode
-            return ar_drive; 
-        }else if (keccak256(contribution) == keccak256("Map Drive")){
-            //For every 3300 meters driven in Map mode
-            return map_drive; 
-        }else if (keccak256(contribution) == keccak256("Dash Drive")){
-            //For every 3300 meters driven in Dash mode
-            return dash_drive; 
-        }else if (keccak256(contribution) == keccak256("Police")){
-            //For every community validated police report
-            return police; 
-        }else if (keccak256(contribution) == keccak256("Closure")){
-            //For every community validated road closure report
-            return closure; 
-        }else if (keccak256(contribution) == keccak256("Hazard")){
-            //For every community validated road hazard report
-            return hazard; 
-        }else if (keccak256(contribution) == keccak256("Traffic")){
-            //For every community validated road traffic report
-            return traffic; 
-        }else if (keccak256(contribution) == keccak256("Accident")){
-            //For every community validated accident report
-            return accident; 
-        }else if (keccak256(contribution) == keccak256("Speed Sign")){
-            //For every community validated speed sign
-            return speed_sign; 
-        }else{
-            //All other report types in app
-            return base_report; 
-        }
-        return value;
+
+    function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool) {
+        require(spender != address(0));
+        _allowed[msg.sender][spender] = (_allowed[msg.sender][spender].sub(subtractedValue));
+        emit Approval(msg.sender, spender, _allowed[msg.sender][spender]);
+        return true;
     }
-    
-    //SafeAdd function from 
-    //https://github.com/OpenZeppelin/zeppelin-solidity/blob/6ad275befb9b24177b2a6a72472673a28108937d/contracts/math/SafeMath.sol
-    function safeAdd(uint a, uint b) internal pure returns (uint) {
-        uint c = a + b;
-        require(c >= a);
-        return c;
+  
+     function transfer(address to, uint tokens) public returns (bool success) {
+        _balanceOf[msg.sender] = _balanceOf[msg.sender].sub(tokens);
+        _balanceOf[to] = _balanceOf[to].add(tokens);
+        emit Transfer(msg.sender, to, tokens);
+        return true;
     }
-    
+ 
+    function transferFrom(address from, address to, uint tokens) public returns (bool success) {
+        _balanceOf[from] = _balanceOf[from].sub(tokens);
+        _allowed[from][msg.sender] = _allowed[from][msg.sender].sub(tokens);
+        _balanceOf[to] = _balanceOf[to].add(tokens);
+        emit Transfer(from, to, tokens);
+        return true;
+    }
+ 
+    function approve(address spender, uint tokens) public returns (bool success) {
+        _allowed[msg.sender][spender] = tokens;
+        emit Approval(msg.sender, spender, tokens);
+        return true;
+    }
+
     //Used to enforce permissions
     modifier onlyBy(address account) {
         require(msg.sender == account);
@@ -183,7 +207,7 @@ contract BLVD{
     }
 
     //The owner can remove the oracle
-    //This can not be reverted and stops the generation of new SnooKarma coins!
+    //This can not be reverted and stops the generation of new tokens!
     function removeOracle() public onlyBy(owner) {
         oracle = address(0);
     }
@@ -192,49 +216,43 @@ contract BLVD{
     function changeMaintainer(address newMaintainer) public onlyBy(owner) {
         maintainer = newMaintainer;
     }
-
-    struct IssuanceMessage {
-        address recipient;
-        uint amount;
-        uint issuanceBlock;
-    }
     
     //Allow address to redeem rewards verified from BULVRD
-    function redeemRewards(uint rewards, address destination) public onlyBy(oracle){
+    function redeemRewards(uint256 rewards, address destination) public onlyBy(oracle){
          //rewards to token conversion
-        uint256 reward = (rewards / limiter);
+        uint256 reward = SafeMath.div(rewards, limiter);
         
-        //Must be owner 
-        require(msg.sender == owner);
-        
-        //The signature must not be expired
-        //TODO find beeter means of preventing transaction replay?
-        //might not be needed if we are storing last block
-        require(block.timestamp <= sigExp);
+        //Must be oracle 
+        require(msg.sender == oracle, "Must be Oracle to complete");
 
         //The amount of rewards needs to be more than the previous redeemed amount
-        require(reward > redeemedRewards[destination]);
+        require(reward > redeemedRewards[destination], "Has not earned since last redeem");
 
         //Make sure we have moved on since the last transaction of the give
-        require(block.number > latestWithdrawBlock[destination]);
+        require(block.number > latestWithdrawBlock[destination], "Have not moved on from last block");
+        
         //check if reward amount can be redeemed against supply
-        uint256 total = totalMinted + reward;
-        require(total <= maxMintable);
+        uint256 total = SafeMath.add(totalMinted, reward);
+        require(total <= maxMintable, "Max Mintable Reached");
 
         //The new rewards that is available to be redeemed
-        uint newUserRewards = reward - redeemedRewards[destination];
-        //The user's rewards balance is updated with the new rewards
-        balanceOf[destination] = safeAdd(balanceOf[destination], newUserRewards);
+        uint256 newUserRewards = SafeMath.sub(reward, redeemedRewards[destination]);
+        
+        //The user's rewards balance is updated with the new reward
+        _balanceOf[destination] = SafeMath.add(_balanceOf[destination], newUserRewards);
+        
         //The total supply (ERC20) is updated
-        totalSupply = safeAdd(totalSupply, newUserRewards);
+        _totalSupply = SafeMath.add(_totalSupply, newUserRewards);
+        
         //The amount of rewards redeemed by a user is updated
         redeemedRewards[destination] = reward;
+        
         //Set block status for user transaction
         latestWithdrawBlock[destination] = block.number;
+        
         //Add newly created tokens to totalMinted count
-        totalMinted = safeAdd(totalMinted, newUserRewards);
-        //Add newly created tokens to rewardsMinted count
-        rewardsMinted = safeAdd(rewardsMinted, newUserRewards);
+        totalMinted = SafeMath.add(totalMinted, newUserRewards);
+        
         //The Redeem event is triggered
         emit RedeemRewards(destination, newUserRewards);
         //Update token holder balance on chain explorers
@@ -243,68 +261,65 @@ contract BLVD{
     
     //This function is a workaround because this.redeemedRewards cannot be public
     //This is the limitation of the current Solidity compiler
-    function redeemedRewardsOf(address destination) public view returns(uint) {
+    function redeemedRewardsOf(address destination) public view returns(uint256) {
         return redeemedRewards[destination];
     }
     
-    //Receive donations
-    function() public payable {  }
     
-    //Transfer donations or accidentally received Ethereum
-    function transferEthereum(uint amount, address destination) public onlyBy(maintainer) {
-        require(destination != address(0));
-        destination.transfer(amount);
-    }
-
-    //Transfer donations or accidentally received ERC20 tokens
-    function transferTokens(address token, uint amount, address destination) public onlyBy(maintainer) {
-        require(destination != address(0));
-        BLVD tokenContract = BLVD(token);
-        tokenContract.transfer(destination, amount);
-    }
- 
-    //Helper functions to allow for updating of contrbition payouts by type
-    function updateContributionReward(string contribution, uint amount) public onlyBy(maintainer){
-       //(value / 5) = 1 BLVD Token
-        if (keccak256(contribution) == keccak256("Referral")){
-            //For referral for a new user to the ecosystem
-            referral = amount; 
-        }else if (keccak256(contribution) == keccak256("Twitter Share")){
-            //For every confirmed share of a new report to Twitter
-            twitter_share = amount; 
-        }else if (keccak256(contribution) == keccak256("Mastodon Share")){
-            //For every confirmed share of a new report to Mastodon
-            mastodon_share = amount; 
-        }else if (keccak256(contribution) == keccak256("AR Drive")){
-            //For every 3300 meters driven in AR mode
-            ar_drive = amount; 
-        }else if (keccak256(contribution) == keccak256("Map Drive")){
-            //For every 3300 meters driven in Map mode
-            map_drive = amount; 
-        }else if (keccak256(contribution) == keccak256("Dash Drive")){
-            //For every 3300 meters driven in Dash mode
-            dash_drive = amount; 
-        }else if (keccak256(contribution) == keccak256("Police")){
-            //For every community validated police report
-            police = amount; 
-        }else if (keccak256(contribution) == keccak256("Closure")){
-            //For every community validated road closure report
-            closure = amount; 
-        }else if (keccak256(contribution) == keccak256("Hazard")){
-            //For every community validated road hazard report
-            hazard = amount; 
-        }else if (keccak256(contribution) == keccak256("Traffic")){
-            //For every community validated road traffic report
-            traffic = amount; 
-        }else if (keccak256(contribution) == keccak256("Accident")){
-            //For every community validated accident report
-            accident = amount; 
-        }else if (keccak256(contribution) == keccak256("Speed Sign")){
-            //For every community validated speed sign
-            return speed_sign; 
-        }else{
-            //All other report types in app
-            base_report = amount; 
-        }
-    }
+    //Helper methods to update rewards
+     function updateLimiter(uint256 value) public onlyBy(maintainer){
+         limiter = value;
+     }
+     
+     function updateReferral(uint256 value) public onlyBy(maintainer){
+         referral = value;
+     }
+     
+     function updateTwitterShare(uint256 value) public onlyBy(maintainer){
+         twitter_share = value;
+     }
+     
+     function updateMastodonShare(uint256 value) public onlyBy(maintainer){
+         mastodon_share = value;
+     }
+     
+     function updateArDrive(uint256 value) public onlyBy(maintainer){
+         ar_drive = value;
+     }
+     
+     function updateMapDrive(uint256 value) public onlyBy(maintainer){
+         map_drive = value;
+     }
+    
+    function updateDashDrive(uint256 value) public onlyBy(maintainer){
+         dash_drive = value;
+     }
+     
+     function updatePolice(uint256 value) public onlyBy(maintainer){
+         police = value;
+     }
+     
+     function updateClosure(uint256 value) public onlyBy(maintainer){
+         closure = value;
+     }
+     
+     function updateHazard(uint256 value) public onlyBy(maintainer){
+         hazard = value;
+     }
+     
+     function updateTraffic(uint256 value) public onlyBy(maintainer){
+         traffic = value;
+     }
+     
+     function updateAccident(uint256 value) public onlyBy(maintainer){
+         accident = value;
+     }
+     
+     function updateSpeedSign(uint256 value) public onlyBy(maintainer){
+         speed_sign = value;
+     }
+     
+     function updateBaseReport(uint256 value) public onlyBy(maintainer){
+         base_report = value;
+     }
 }
