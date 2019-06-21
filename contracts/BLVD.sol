@@ -219,17 +219,18 @@ contract BLVD is ERC20Detailed {
     
     //Allow address to redeem rewards verified from BULVRD
     function redeemRewards(uint256 rewards, address destination) public onlyBy(oracle){
-         //rewards to token conversion
-        uint256 reward = SafeMath.div(rewards, limiter);
         
         //Must be oracle 
         require(msg.sender == oracle, "Must be Oracle to complete");
 
-        //The amount of rewards needs to be more than the previous redeemed amount
-        require(reward > redeemedRewards[destination], "Has not earned since last redeem");
-
         //Make sure we have moved on since the last transaction of the give
         require(block.number > latestWithdrawBlock[destination], "Have not moved on from last block");
+        
+        //rewards to token conversion
+        uint256 reward = SafeMath.div(rewards, limiter);
+        
+        //The amount of rewards needs to be more than the previous redeemed amount
+        require(reward > redeemedRewards[destination], "Has not earned since last redeem");
         
         //check if reward amount can be redeemed against supply
         uint256 total = SafeMath.add(totalMinted, reward);
