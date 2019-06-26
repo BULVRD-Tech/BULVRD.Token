@@ -108,6 +108,7 @@ contract BLVD is ERC20Detailed {
     uint256 public closure = 15;
     uint256 public map_drive = 10;
     uint256 public dash_drive = 10;
+    uint256 public odb2_drive = 10;
     uint256 public police = 10;
     uint256 public hazard = 10;
     uint256 public accident = 10;
@@ -294,6 +295,10 @@ contract BLVD is ERC20Detailed {
     
     function updateDashDrive(uint256 value) public onlyBy(maintainer){
          dash_drive = value;
+     }
+     
+     function updateObd2Drive(uint256 value) public onlyBy(maintainer){
+         odb2_drive = value;
      }
      
      function updatePolice(uint256 value) public onlyBy(maintainer){
