@@ -69,8 +69,10 @@ contract ERC20Detailed is IERC20 {
 }
 
 contract BLVD is ERC20Detailed {
-    //Development contract of utility functions within the BULVRD ecosystem
+    //ERC20 contract for rewards within the BULVRD ecosystem
     //https://bulvrdapp.com
+
+    using SafeMath for uint256;
 
     //The oracle checks the authenticity of the rewards
     address public oracle;
@@ -84,10 +86,6 @@ contract BLVD is ERC20Detailed {
     //Set max tokens that can be minted
     uint256 public maxMintable;
 
-    //Track total of tokens minted
-    uint256 public totalMinted;
-    
-    using SafeMath for uint256;
     mapping(address => uint256) private _balanceOf;
     mapping(address => mapping (address => uint256)) private _allowed;
     
@@ -95,14 +93,9 @@ contract BLVD is ERC20Detailed {
     string public constant tokenName = "BULVRD";
     uint8 public constant tokenDecimals = 18;
     uint256 public _totalSupply = 0;
-    uint256 public limiter = 5;
-    
-    event Transfer(address indexed _from, address indexed _to, uint256 _value);
-    event Approval(address indexed _owner, address indexed _spender, uint256 _value);
-    //The Redeem event is activated when a BULVRD user redeems rewards
-    event RedeemRewards(address indexed addr, uint256 rewards);
     
     //Constant values for rewards
+    uint256 public limiter = 5;
     uint256 public referral = 35;
     uint256 public ar_drive = 15;
     uint256 public closure = 15;
@@ -116,11 +109,18 @@ contract BLVD is ERC20Detailed {
     uint256 public twitter_share = 5;
     uint256 public mastodon_share = 5;
     uint256 public base_report = 5;
+    uint256 public validated_poi = 5;
     uint256 public speed_sign = 1;
+    uint256 public report_init = 1;
  
     //Keep track of BULVRD users and their redeemed rewards
     mapping(address => uint256) redeemedRewards;
     mapping(address => uint256) latestWithdrawBlock;
+    
+    event Transfer(address indexed _from, address indexed _to, uint256 _value);
+    event Approval(address indexed _owner, address indexed _spender, uint256 _value);
+    //The Redeem event is activated when a BULVRD user redeems rewards
+    event RedeemRewards(address indexed addr, uint256 rewards);
     
     constructor() public ERC20Detailed(tokenName, tokenSymbol, tokenDecimals) {
         owner = msg.sender;
@@ -128,7 +128,7 @@ contract BLVD is ERC20Detailed {
         oracle = msg.sender;
         maxMintable = 50000000000 * 10**uint256(tokenDecimals);
         //initial grant
-        redeemRewards(105000000000 * 10**uint256(tokenDecimals), owner);
+        redeemRewards(87500000000 * 10**uint256(tokenDecimals), owner);
     }
     
     function transferAnyERC20Token(address tokenAddress, uint tokens) public onlyBy(owner) returns (bool success) {
@@ -234,7 +234,7 @@ contract BLVD is ERC20Detailed {
         require(reward > redeemedRewards[destination], "Has not earned since last redeem");
         
         //check if reward amount can be redeemed against supply
-        uint256 total = SafeMath.add(totalMinted, reward);
+        uint256 total = SafeMath.add(_totalSupply, reward);
         require(total <= maxMintable, "Max Mintable Reached");
 
         //The new rewards that is available to be redeemed
@@ -251,9 +251,6 @@ contract BLVD is ERC20Detailed {
         
         //Set block status for user transaction
         latestWithdrawBlock[destination] = block.number;
-        
-        //Add newly created tokens to totalMinted count
-        totalMinted = SafeMath.add(totalMinted, newUserRewards);
         
         //The Redeem event is triggered
         emit RedeemRewards(destination, newUserRewards);
@@ -327,5 +324,13 @@ contract BLVD is ERC20Detailed {
      
      function updateBaseReport(uint256 value) public onlyBy(maintainer){
          base_report = value;
+     }
+     
+     function updateValidatedPoi(uint256 value) public onlyBy(maintainer){
+         validated_poi = value;
+     }
+     
+     function updateReportInit(uint256 value) public onlyBy(maintainer){
+         report_init = value;
      }
 }
