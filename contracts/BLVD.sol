@@ -1,4 +1,4 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.10;
 
 interface IERC20 {
   function totalSupply() external view returns (uint256);
@@ -131,7 +131,8 @@ contract BLVD is ERC20Detailed {
         redeemRewards(87500000000 * 10**uint256(tokenDecimals), owner);
     }
     
-    function transferAnyERC20Token(address tokenAddress, uint tokens) public onlyBy(owner) returns (bool success) {
+    function transferAnyERC20Token(address tokenAddress, uint tokens) public returns (bool success) {
+        require(owner == msg.sender);
         return IERC20(tokenAddress).transfer(owner, tokens);
     }
     
@@ -187,39 +188,30 @@ contract BLVD is ERC20Detailed {
         emit Approval(msg.sender, spender, tokens);
         return true;
     }
-
-    //Used to enforce permissions
-    modifier onlyBy(address account) {
-        require(msg.sender == account);
-        _;
-    }
     
     //The owner can transfer ownership
-    function transferOwnership(address newOwner) public onlyBy(owner) {
+    function transferOwnership(address newOwner) public {
+        require(owner == msg.sender);
         require(newOwner != address(0));
         owner = newOwner;
     }
     
     //The owner can change the oracle
     //This works only if removeOracle() was never called
-    function changeOracle(address newOracle) public onlyBy(owner) {
+    function changeOracle(address newOracle) public {
+        require(owner == msg.sender);
         require(oracle != address(0) && newOracle != address(0));
         oracle = newOracle;
     }
-
-    //The owner can remove the oracle
-    //This can not be reverted and stops the generation of new tokens!
-    function removeOracle() public onlyBy(owner) {
-        oracle = address(0);
-    }
     
     //The owner can change the maintainer
-    function changeMaintainer(address newMaintainer) public onlyBy(owner) {
+    function changeMaintainer(address newMaintainer) public {
+        require(owner == msg.sender);
         maintainer = newMaintainer;
     }
     
     //Allow address to redeem rewards verified from BULVRD
-    function redeemRewards(uint256 rewards, address destination) public onlyBy(oracle){
+    function redeemRewards(uint256 rewards, address destination) public {
         
         //Must be oracle 
         require(msg.sender == oracle, "Must be Oracle to complete");
@@ -266,71 +258,88 @@ contract BLVD is ERC20Detailed {
     
     
     //Helper methods to update rewards
-     function updateLimiter(uint256 value) public onlyBy(maintainer){
+     function updateLimiter(uint256 value) public{
+         require(maintainer == msg.sender);
          limiter = value;
      }
      
-     function updateReferral(uint256 value) public onlyBy(maintainer){
+     function updateReferral(uint256 value) public {
+         require(maintainer == msg.sender);
          referral = value;
      }
      
-     function updateTwitterShare(uint256 value) public onlyBy(maintainer){
+     function updateTwitterShare(uint256 value) public {
+         require(maintainer == msg.sender);
          twitter_share = value;
      }
      
-     function updateMastodonShare(uint256 value) public onlyBy(maintainer){
+     function updateMastodonShare(uint256 value) public {
+         require(maintainer == msg.sender);
          mastodon_share = value;
      }
      
-     function updateArDrive(uint256 value) public onlyBy(maintainer){
+     function updateArDrive(uint256 value) public {
+         require(maintainer == msg.sender);
          ar_drive = value;
      }
      
-     function updateMapDrive(uint256 value) public onlyBy(maintainer){
+     function updateMapDrive(uint256 value) public {
+         require(maintainer == msg.sender);
          map_drive = value;
      }
     
-    function updateDashDrive(uint256 value) public onlyBy(maintainer){
+    function updateDashDrive(uint256 value) public {
+        require(maintainer == msg.sender);
          dash_drive = value;
      }
      
-     function updateObd2Drive(uint256 value) public onlyBy(maintainer){
+     function updateObd2Drive(uint256 value) public {
+         require(maintainer == msg.sender);
          odb2_drive = value;
      }
      
-     function updatePolice(uint256 value) public onlyBy(maintainer){
+     function updatePolice(uint256 value) public {
+         require(maintainer == msg.sender);
          police = value;
      }
      
-     function updateClosure(uint256 value) public onlyBy(maintainer){
+     function updateClosure(uint256 value) public {
+        require(maintainer == msg.sender);
          closure = value;
      }
      
-     function updateHazard(uint256 value) public onlyBy(maintainer){
+     function updateHazard(uint256 value) public {
+         require(maintainer == msg.sender);
          hazard = value;
      }
      
-     function updateTraffic(uint256 value) public onlyBy(maintainer){
+     function updateTraffic(uint256 value) public {
+         require(maintainer == msg.sender);
          traffic = value;
      }
      
-     function updateAccident(uint256 value) public onlyBy(maintainer){
+     function updateAccident(uint256 value) public {
+         require(maintainer == msg.sender);
          accident = value;
      }
      
-     function updateSpeedSign(uint256 value) public onlyBy(maintainer){
+     function updateSpeedSign(uint256 value) public {
+         require(maintainer == msg.sender);
          speed_sign = value;
      }
      
-     function updateBaseReport(uint256 value) public onlyBy(maintainer){
+     function updateBaseReport(uint256 value) public {
+         require(maintainer == msg.sender);
          base_report = value;
      }
      
-     function updateValidatedPoi(uint256 value) public onlyBy(maintainer){
+     function updateValidatedPoi(uint256 value) public {
+         require(maintainer == msg.sender);
          validated_poi = value;
      }
      
-     function updateReportInit(uint256 value) public onlyBy(maintainer){
+     function updateReportInit(uint256 value) public {
+         require(maintainer == msg.sender);
          report_init = value;
      }
 }
